@@ -210,9 +210,30 @@ body {
     min-height: 500px;
 }
 
-.report-table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: left; }
-.report-table th { padding: 12px; color: var(--text-muted); border-bottom: 2px solid var(--border-color); }
-.report-table td { padding: 16px; border-bottom: 1px solid rgba(51, 65, 85, 0.5); }
+/* Enhanced Table UI */
+.report-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 12px; /* Spaced rows for professional look */
+    margin-top: 20px;
+}
+
+.report-table tr {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(10px);
+    transition: transform 0.2s ease;
+}
+
+.report-table tr:hover {
+    transform: scale(1.01);
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.report-table td {
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
 
 .badge { padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; }
 .risk-critical { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
@@ -243,7 +264,7 @@ body {
 .ticker-wrapper {
     display: inline-block;
     padding-left: 100%;
-    animation: ticker-animation 30s linear infinite;
+    animation: ticker-animation 60s linear infinite;
 }
 
 @keyframes ticker-animation {
@@ -252,15 +273,22 @@ body {
 }
 
 .scan-line {
-    position: absolute; width: 100%; height: 100px; z-index: 5;
+    position: absolute; 
+    width: 100%; 
+    height: 100px; 
+    z-index: 5;
     background: linear-gradient(to bottom, transparent 0%, rgba(56, 189, 248, 0.1) 50%, var(--accent-blue) 98%, var(--accent-blue) 100%);
     box-shadow: 0 10px 20px -5px var(--accent-blue);
-    opacity: 0.6; top: -150px; animation: scan-move 8s linear infinite; 
+    opacity: 0.6; 
+    top: -150px; 
+    animation: scan-move 8s linear infinite; 
     pointer-events: none;
 }
 
-@keyframes scan-move { 0% { top: -150px; } 100% { top: 100%; } }
-
+@keyframes scan-move { 
+    0% { top: -150px; } 
+    100% { top: 100%; } 
+}
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-dark); }
 ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; border: 2px solid var(--bg-dark); }
@@ -298,10 +326,38 @@ body {
 }
 
 @media print {
-    .sidebar, .top-bar, .log-ticker, .scan-line { display: none !important; }
-    .main-content { padding: 0; margin: 0; width: 100%; }
-    .detailed-report { background: white !important; color: black !important; border: none !important; backdrop-filter: none !important; }
-    .report-table th, .report-table td { border-bottom: 1px solid #ddd !important; color: black !important; }
+    /* Hide UI elements that aren't part of the data */
+    .sidebar, .top-bar, .log-ticker, .loading-overlay, .scan-line { 
+        display: none !important; 
+    }
+
+    /* Allow the dashboard to expand across pages */
+    body, .dashboard-container, .main-content, .detailed-report {
+        display: block !important;
+        overflow: visible !important;
+        height: auto !important;
+        background: white !important;
+        color: black !important;
+    }
+
+    .main-content { padding: 0; width: 100%; }
+
+    /* Professional Table Printing */
+    .report-table {
+        page-break-inside: auto;
+        color: black !important;
+    }
+    .report-table tr { 
+        page-break-inside: avoid; 
+        page-break-after: auto;
+        background: white !important;
+        border: 1px solid #ddd !important;
+    }
+    .badge {
+        border: 1px solid #000 !important;
+        color: black !important;
+        background: transparent !important;
+    }
 }
 /* --- Professional Cyber Dashboard Theme --- */
 
@@ -412,4 +468,38 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
+}
+
+/* AI-specific terminal styling */
+.status-line {
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-5px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+/* --- Neural Pulse Animation --- */
+@keyframes neural-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.4);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 20px 5px rgba(56, 189, 248, 0.2);
+        transform: scale(1.02);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+        transform: scale(1);
+    }
+}
+
+/* This class will be added/removed by JavaScript */
+.card.neural-active {
+    border-color: var(--accent-blue) !important;
+    animation: neural-pulse 2s infinite ease-in-out;
 }

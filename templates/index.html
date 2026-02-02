@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Nio Stars | IP Intel Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.5">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.7">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="log-ticker">
         <div class="ticker-wrapper" id="logTicker">
             <span>[SYSTEM] Monitoring active...</span> &nbsp;&nbsp;
-            <span>[SCRAPER] NVD Database Connected...</span> &nbsp;&nbsp;
-            <span>[ENGINE] AI Analysis Ready...</span> &nbsp;&nbsp;
-            <span>[SECURITY] Nio Stars Tech Stack Online...</span>
+            <span>[SCRAPER] NIST NVD Database Connected...</span> &nbsp;&nbsp;
+            <span>[ENGINE] AI CVE Analysis Ready...</span>
         </div>
     </div>
 
@@ -24,19 +23,16 @@
                 <ul>
                     <li class="active"><i class="fas fa-chart-line"></i> <span>Dashboard</span></li>
                     <li onclick="window.print()"><i class="fas fa-file-export"></i> <span>Export Report</span></li>
-                    <li><i class="fas fa-cog"></i> <span>Settings</span></li>
                 </ul>
             </nav>
-            <div class="user-profile"><div class="avatar">JD</div><span>Junior Dev</span></div>
         </aside>
 
         <main class="main-content">
+            <div class="scan-line"></div> 
             <header class="top-bar">
                 <div class="search-area">
                     <i class="fas fa-search"></i>
                     <input type="text" id="ipInput" placeholder="Target IP...">
-                    <input type="file" id="fileUpload" accept=".json" style="display: none;" onchange="processWithPython(event)">
-                    <button class="icon-btn" onclick="document.getElementById('fileUpload').click()"><i class="fas fa-file-upload"></i></button>
                     <button id="scanBtn">RUN ANALYSIS</button>
                 </div>
                 <div class="status-indicator"><span class="dot online-glow"></span> System Online</div>
@@ -45,25 +41,20 @@
             <section class="dashboard-stats">
                 <div class="card"><div class="card-icon blue-bg"><i class="fas fa-network-wired"></i></div><div class="card-info"><h3>IP Address</h3><p id="geoData">Waiting...</p></div></div>
                 <div class="card"><div class="card-icon red-bg"><i class="fas fa-biohazard"></i></div><div class="card-info"><h3>Threat Level</h3><p id="threatData">No Scan Active</p></div></div>
-                <div class="card"><div class="card-icon green-bg"><i class="fas fa-microscope"></i></div><div class="card-info"><h3>Findings</h3><p id="ispData">0 Found</p></div></div>
+                <div class="card"><div class="card-icon green-bg"><i class="fas fa-microscope"></i></div><div class="card-info"><h3>CVE Findings</h3><p id="ispData">0 Found</p></div></div>
             </section>
 
             <section class="detailed-report">
-                <div class="scan-line"></div>
-                
                 <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-                    <div class="ai-core-container">
-                        <div class="cyber-spinner"></div>
+                    <div class="ai-core-container" style="width: 500px;">
                         <div class="terminal-window">
-                            <div class="terminal-header"><span>AI_ENGINE_CORE_V1.0</span></div>
-                            <div id="terminalBody" class="terminal-body">
-                                <p class="status-line active-line">> INITIALIZING NEURAL LINKS...</p>
-                            </div>
+                            <div class="terminal-header"><span>NIO_STARS_AI_ENGINE_V1.0</span></div>
+                            <div id="terminalBody" class="terminal-body"></div>
                         </div>
-                        <div class="progress-wrapper">
-                            <div class="progress-container"><div id="progressBar" class="progress-bar"></div></div>
-                            <span id="progressPercent">0%</span>
+                        <div class="progress-container" style="width: 100%; height: 10px; background: #111; margin-top: 20px; border-radius: 5px; overflow: hidden;">
+                            <div id="progressBar" class="progress-bar" style="width: 0%;"></div>
                         </div>
+                        <p id="progressPercent" style="text-align: center; color: var(--accent-blue); margin-top: 10px; font-weight: bold;">0%</p>
                     </div>
                 </div>
 
@@ -71,8 +62,7 @@
                     <div class="empty-state">
                         <div class="pulse-icon"><i class="fas fa-terminal"></i></div>
                         <h2>System Ready</h2>
-                        <p>Upload a JSON scan file or enter a target IP address to begin inspection.</p>
-                        <div class="loading-dots"><span></span><span></span><span></span></div>
+                        <p>Enter a target IP to initiate AI Neural Intelligence Scan.</p>
                     </div>
                 </div>
             </section>
@@ -80,133 +70,122 @@
     </div>
 
     <script>
-        const sidebar = document.querySelector('.sidebar');
-        document.getElementById('toggle-sidebar').addEventListener('click', () => { sidebar.classList.toggle('collapsed'); });
-
         function renderDashboard(data) {
             document.getElementById('geoData').innerText = data.target_ip || "N/A";
-            document.getElementById('threatData').innerText = `${data.threat_level || 'Unknown'} (${data.max_score || 0})`;
-            document.getElementById('ispData').innerText = `${data.total_findings || 0} Found`;
+            document.getElementById('threatData').innerHTML = `<span class="badge ${data.max_score >= 7 ? 'risk-critical' : 'risk-high'}">${data.threat_level || 'N/A'}</span>`;
+            document.getElementById('ispData').innerText = `${data.total_findings || 0} CVEs Detected`;
 
-            let html = '<table class="report-table"><thead><tr><th>Service</th><th>Vulnerability</th><th>Score</th></tr></thead><tbody>';
+            let html = '<table class="report-table"><thead><tr style="background:transparent;"><th style="color:var(--accent-blue); text-align:left; padding-left:20px;">SERVICE ENGINE</th><th style="color:var(--accent-blue); text-align:left;">INTELLIGENCE REPORT</th><th style="color:var(--accent-blue); text-align:center;">THREAT SCORE</th></tr></thead><tbody>';
             
-            // --- NEW: Filter only items that start with "CVE-" ---
-            const cveOnlyResults = data.results.filter(item => 
-                item['Vulnerability ID'].startsWith('CVE-')
-            );
-
-            if (cveOnlyResults.length > 0) {
-                cveOnlyResults.forEach(item => {
-                    html += `<tr>
-                        <td><strong>${item.Service}</strong><br><small>${item.Version}</small></td>
-                        <td>
-                            <a href="${item['Reference URL']}" target="_blank" style="color:var(--accent-blue); text-decoration:none;">
-                                ${item['Vulnerability ID']}
-                            </a>
-                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">${item.description}</p>
-                        </td>
-                        <td><span class="badge ${item.risk_class}">${item['CVSS Score']}</span></td>
-                    </tr>`;
+            if (data.results && data.results.length > 0) {
+                data.results.forEach(item => {
+                    html += `<tr><td><div style="display:flex; align-items:center; gap:10px;"><i class="fas fa-server" style="color:var(--accent-blue)"></i><div><strong style="font-size:1.1rem;">${item.Service}</strong><br><small style="color:var(--text-muted)">${item.Version}</small></div></div></td><td><a href="${item['Reference URL']}" target="_blank" style="color:var(--text-main); text-decoration:none; font-weight:700; font-size:1.1rem; border-bottom: 1px dashed var(--accent-blue);">${item['Vulnerability ID']} <i class="fas fa-external-link-alt" style="font-size:0.8rem; opacity:0.6;"></i></a><p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 10px; line-height:1.6;">${item.description || ''}</p></td><td style="text-align:center;"><span class="badge ${item.risk_class}">${item['CVSS Score']}</span></td></tr>`;
                 });
             } else {
-                html += '<tr><td colspan="3" style="text-align:center; padding: 20px;">No official CVEs detected.</td></tr>';
+                html += '<tr><td colspan="3" style="text-align:center; padding: 50px;">Scan verified. No official CVEs identified.</td></tr>';
             }
-            
             document.getElementById('reportBody').innerHTML = html + '</tbody></table>';
         }
 
-        async function processWithPython(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
+        async function startAnalysis(payload) {
             const overlay = document.getElementById('loadingOverlay');
             const terminal = document.getElementById('terminalBody');
+            const ticker = document.getElementById('logTicker');
             const bar = document.getElementById('progressBar');
             const percentText = document.getElementById('progressPercent');
+            const cards = document.querySelectorAll('.card');
             
-            // Reset and Show UI
             overlay.style.display = 'flex';
             document.getElementById('reportBody').style.opacity = '0.3';
             bar.style.width = '0%';
-            percentText.innerText = '0%';
-            terminal.innerHTML = '<p class="status-line">> [SYSTEM] BOOTING AI ENGINE...</p>';
+            terminal.innerHTML = '';
+            cards.forEach(card => card.classList.add('neural-active'));
 
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const response = await fetch('/analyze', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(JSON.parse(e.target.result))
-                    });
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-                    // Stream Reader setup
-                    const streamReader = response.body.getReader();
-                    const decoder = new TextDecoder("utf-8");
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = ""; // FIX: Buffer to handle partial chunks
 
-                    while (true) {
-                        const { value, done } = await streamReader.read();
-                        if (done) break;
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
 
-                        const chunk = decoder.decode(value, { stream: true });
-                        
-                        // Process each data: block
-                        const lines = chunk.split('\n\n');
-                        lines.forEach(line => {
-                            if (line.startsWith('data: ')) {
-                                try {
-                                    const data = JSON.parse(line.replace('data: ', ''));
-                                    
-                                    // 1. Update Terminal Logs
-                                    if (data.msg) {
-                                        const p = document.createElement('p');
-                                        p.className = 'status-line';
-                                        p.innerText = `> ${data.msg}`;
-                                        terminal.appendChild(p);
-                                        terminal.scrollTop = terminal.scrollHeight; // Auto-scroll
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n\n');
+                    
+                    // The last element might be an incomplete chunk
+                    buffer = lines.pop(); 
+
+                    lines.forEach(line => {
+                        if (line.trim().startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.replace('data: ', '').trim());
+                                
+                                if (data.msg) {
+                                    const p = document.createElement('p');
+                                    p.className = 'status-line';
+                                    if (data.msg.includes('[AI]')) {
+                                        p.style.color = 'var(--accent-blue)';
+                                        p.style.textShadow = '0 0 10px var(--accent-blue)';
                                     }
-
-                                    // 2. Update Progress Bar
-                                    if (data.progress !== undefined) {
-                                        bar.style.width = data.progress + '%';
-                                        percentText.innerText = data.progress + '%';
-                                    }
-
-                                    // 3. Render Final Results
-                                    if (data.complete) {
-                                        renderDashboard(data);
-                                    }
-                                } catch (jsonErr) {
-                                    console.warn("Partial data received...", jsonErr);
+                                    p.innerText = `> ${data.msg}`;
+                                    terminal.appendChild(p);
+                                    terminal.scrollTop = terminal.scrollHeight;
                                 }
+
+                                if (data.ticker) {
+                                    const span = document.createElement('span');
+                                    span.style.color = "var(--accent-red)";
+                                    span.innerHTML = ` &nbsp;&nbsp; [ANALYZING] ${data.ticker} &nbsp;&nbsp; `;
+                                    ticker.prepend(span);
+                                }
+
+                                if (data.progress) {
+                                    bar.style.width = data.progress + '%';
+                                    percentText.innerText = Math.round(data.progress) + '%';
+                                }
+
+                                if (data.complete) {
+                                    renderDashboard(data);
+                                    const finalMsg = document.createElement('p');
+                                    finalMsg.className = 'status-line';
+                                    finalMsg.style.color = 'var(--accent-green)';
+                                    finalMsg.innerText = "> [AI] DEEP ANALYSIS COMPLETE. DEPLOYING INTELLIGENCE REPORT...";
+                                    terminal.appendChild(finalMsg);
+
+                                    setTimeout(() => { 
+                                        cards.forEach(card => card.classList.remove('neural-active'));
+                                        overlay.style.display = 'none'; 
+                                        document.getElementById('reportBody').style.opacity = '1';
+                                    }, 1500); 
+                                }
+                            } catch (e) {
+                                console.error("JSON parse error on line:", line, e);
                             }
-                        });
-                    }
-                } catch (err) {
-                    console.error("AI Engine Stream Error:", err);
-                    const errorLine = document.createElement('p');
-                    errorLine.className = 'status-line';
-                    errorLine.style.color = 'var(--accent-red)';
-                    errorLine.innerText = `> [ERROR] CONNECTION INTERRUPTED: ${err.message}`;
-                    terminal.appendChild(errorLine);
-                } finally {
-                    // Smoothly hide overlay after a short delay
-                    setTimeout(() => {
-                        overlay.style.display = 'none';
-                        document.getElementById('reportBody').style.opacity = '1';
-                    }, 1000);
+                        }
+                    });
                 }
-            };
-            reader.readAsText(file);
+            } catch (err) {
+                console.error("AI Neural Link Error:", err);
+                cards.forEach(card => card.classList.remove('neural-active'));
+                overlay.style.display = 'none';
+            }
         }
-        document.getElementById('scanBtn').addEventListener('click', async () => {
+
+        document.getElementById('scanBtn').addEventListener('click', () => {
             const ip = document.getElementById('ipInput').value;
-            if (!ip) return alert("Enter IP");
-            const btn = document.getElementById('scanBtn');
-            btn.innerText = "SCANNING..."; btn.disabled = true;
-            const res = await fetch('/analyze', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ ip: ip }) });
-            renderDashboard(await res.json());
-            btn.innerText = "RUN ANALYSIS"; btn.disabled = false;
+            if (ip) startAnalysis({ ip: ip });
+        });
+
+        const sidebar = document.querySelector('.sidebar');
+        document.getElementById('toggle-sidebar').addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
         });
     </script>
 </body>
