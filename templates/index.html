@@ -5,6 +5,19 @@
     <title>Nio Stars | IP Intel Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.7">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Sidebar History Styles */
+        .history-container { padding: 10px; max-height: 300px; overflow-y: auto; }
+        .history-item { 
+            padding: 12px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.03); 
+            border-left: 3px solid var(--accent-blue); border-radius: 4px; cursor: pointer; transition: 0.2s;
+        }
+        .history-item:hover { background: rgba(0, 243, 255, 0.08); transform: translateX(5px); }
+        .history-item span { display: block; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+        .history-item strong { font-size: 0.85rem; color: var(--accent-blue); word-break: break-all; }
+        .empty-history { text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 20px; }
+        .sidebar-header { padding: 10px; font-size: 0.8rem; letter-spacing: 1px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
+    </style>
 </head>
 <body>
     <div class="log-ticker">
@@ -24,6 +37,14 @@
                     <li class="active"><i class="fas fa-chart-line"></i> <span>Dashboard</span></li>
                     <li onclick="window.print()"><i class="fas fa-file-export"></i> <span>Export Report</span></li>
                 </ul>
+                <div class="sidebar-content" style="margin-top: 30px;">
+                    <div class="sidebar-header">
+                        <i class="fas fa-history"></i> <span>SCAN HISTORY</span>
+                    </div>
+                    <div id="scanHistoryList" class="history-container">
+                        <div class="empty-history">No recent scans</div>
+                    </div>
+                </div>
             </nav>
         </aside>
 
@@ -32,14 +53,37 @@
             <header class="top-bar">
                 <div class="search-area">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="ipInput" placeholder="Target IP...">
+                    <input type="text" id="ipInput" placeholder="Targets (e.g. 192.168.1.1)...">
+                    
+                    <input type="file" id="fileInput" accept=".txt" style="display: none;">
+                    <button id="uploadBtn" title="Upload IP List (.txt)" style="background: transparent; border: 1px solid var(--border-color); color: var(--accent-blue); padding: 5px 10px; border-radius: 5px; margin-right: 10px; cursor: pointer;">
+                        <i class="fas fa-file-upload"></i>
+                    </button>
+
+                    <select id="scanMode" style="background: #111; color: var(--accent-blue); border: 1px solid var(--border-color); padding: 8px; border-radius: 5px; margin-right: 10px;">
+                        <option value="top1000">Top 1000 Ports</option>
+                        <option value="full">Full Scan (-p-)</option>
+                    </select>
                     <button id="scanBtn">RUN ANALYSIS</button>
                 </div>
-                <div class="status-indicator"><span class="dot online-glow"></span> System Online</div>
+                <div class="status-indicator">
+                    <span class="dot online-glow"></span> 
+                    System Online
+                </div>
             </header>
 
             <section class="dashboard-stats">
-                <div class="card"><div class="card-icon blue-bg"><i class="fas fa-network-wired"></i></div><div class="card-info"><h3>IP Address</h3><p id="geoData">Waiting...</p></div></div>
+                <div class="card">
+                    <div class="card-icon blue-bg">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3>IP Address</h3>
+                        <select id="ipSelector" onchange="filterByIP(this.value)" style="background:transparent; color:white; border:none; outline:none; font-size:1.1rem; width:100%; cursor:pointer;">
+                            <option>Waiting...</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="card"><div class="card-icon red-bg"><i class="fas fa-biohazard"></i></div><div class="card-info"><h3>Threat Level</h3><p id="threatData">No Scan Active</p></div></div>
                 <div class="card"><div class="card-icon green-bg"><i class="fas fa-microscope"></i></div><div class="card-info"><h3>CVE Findings</h3><p id="ispData">0 Found</p></div></div>
             </section>
@@ -70,30 +114,133 @@
     </div>
 
     <script>
+        let allScanResults = []; 
+        let scanHistory = []; // Global History Store
+
         function renderDashboard(data) {
-            document.getElementById('geoData').innerText = data.target_ip || "N/A";
-            document.getElementById('threatData').innerHTML = `<span class="badge ${data.max_score >= 7 ? 'risk-critical' : 'risk-high'}">${data.threat_level || 'N/A'}</span>`;
+            allScanResults = data.results; 
+            
+            const selector = document.getElementById('ipSelector');
+            if (selector) {
+                selector.innerHTML = '<option value="all">ALL TARGETS</option>';
+                if (data.unique_ips) {
+                    data.unique_ips.forEach(ip => {
+                        selector.innerHTML += `<option value="${ip}">${ip}</option>`;
+                    });
+                }
+            }
+            const counts = data.threat_counts || { "CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0 };
+            document.getElementById('threatData').innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 5px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span class="badge risk-critical">Critical: ${counts.CRITICAL}</span>
+                        <span class="badge risk-high">High: ${counts.HIGH}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span class="badge risk-medium">Medium: ${counts.MEDIUM}</span>
+                        <span class="badge risk-low">Low: ${counts.LOW}</span>
+                    </div>
+                </div>
+            `;
+
             document.getElementById('ispData').innerText = `${data.total_findings || 0} CVEs Detected`;
 
+            updateTable(allScanResults); 
+            
+            // Hide overlay if reloading from history
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('reportBody').style.opacity = '1';
+        }
+
+        // Add to Sidebar History
+        function addToHistory(data) {
+            const item = {
+                id: Date.now(),
+                label: data.target_ip,
+                count: data.total_findings,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                fullData: data
+            };
+            scanHistory.unshift(item);
+            updateHistoryUI();
+        }
+
+        function updateHistoryUI() {
+            const container = document.getElementById('scanHistoryList');
+            container.innerHTML = '';
+            if (scanHistory.length === 0) {
+                container.innerHTML = '<div class="empty-history">No recent scans</div>';
+                return;
+            }
+            scanHistory.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.onclick = () => renderDashboard(item.fullData);
+                div.innerHTML = `
+                    <strong>${item.label}</strong>
+                    <span>${item.time} • ${item.count} Findings</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function filterByIP(selectedIP) {
+            if (selectedIP === "all") {
+                updateTable(allScanResults);
+            } else {
+                const filtered = allScanResults.filter(item => item.ip === selectedIP);
+                updateTable(filtered);
+            }
+        }
+
+        function updateTable(results) {
             let html = '<table class="report-table"><thead><tr style="background:transparent;"><th style="color:var(--accent-blue); text-align:left; padding-left:20px;">SERVICE ENGINE</th><th style="color:var(--accent-blue); text-align:left;">INTELLIGENCE REPORT</th><th style="color:var(--accent-blue); text-align:center;">THREAT SCORE</th></tr></thead><tbody>';
             
-            if (data.results && data.results.length > 0) {
-                data.results.forEach(item => {
-                    html += `<tr><td><div style="display:flex; align-items:center; gap:10px;"><i class="fas fa-server" style="color:var(--accent-blue)"></i><div><strong style="font-size:1.1rem;">${item.Service}</strong><br><small style="color:var(--text-muted)">${item.Version}</small></div></div></td><td><a href="${item['Reference URL']}" target="_blank" style="color:var(--text-main); text-decoration:none; font-weight:700; font-size:1.1rem; border-bottom: 1px dashed var(--accent-blue);">${item['Vulnerability ID']} <i class="fas fa-external-link-alt" style="font-size:0.8rem; opacity:0.6;"></i></a><p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 10px; line-height:1.6;">${item.description || ''}</p></td><td style="text-align:center;"><span class="badge ${item.risk_class}">${item['CVSS Score']}</span></td></tr>`;
+            if (results && results.length > 0) {
+                results.forEach(item => {
+                    html += `<tr>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <i class="fas fa-server" style="color:var(--accent-blue)"></i>
+                                <div>
+                                    <strong style="font-size:1.1rem;">${item.Service}</strong><br>
+                                    <small style="color:var(--text-muted)">${item.Version} (${item.ip})</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="${item['Reference URL']}" target="_blank" style="color:var(--text-main); text-decoration:none; font-weight:700; font-size:1.1rem; border-bottom: 1px dashed var(--accent-blue);">
+                                ${item['Vulnerability ID']} <i class="fas fa-external-link-alt" style="font-size:0.8rem; opacity:0.6;"></i>
+                            </a>
+                            <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 10px; line-height:1.6;">${item.description || ''}</p>
+                        </td>
+                        <td style="text-align:center;">
+                            <span class="badge ${item.risk_class}">${item['CVSS Score']}</span>
+                        </td>
+                    </tr>`;
                 });
             } else {
-                html += '<tr><td colspan="3" style="text-align:center; padding: 50px;">Scan verified. No official CVEs identified.</td></tr>';
+                html += '<tr><td colspan="3" style="text-align:center; padding: 50px;">Scan verified. No findings for this selection.</td></tr>';
             }
             document.getElementById('reportBody').innerHTML = html + '</tbody></table>';
         }
 
-        async function startAnalysis(payload) {
+        async function startAnalysis(formData) {
             const overlay = document.getElementById('loadingOverlay');
             const terminal = document.getElementById('terminalBody');
             const ticker = document.getElementById('logTicker');
             const bar = document.getElementById('progressBar');
             const percentText = document.getElementById('progressPercent');
             const cards = document.querySelectorAll('.card');
+            
+            // UI Elements for "Running" state
+            const scanBtn = document.getElementById('scanBtn');
+            const threatData = document.getElementById('threatData');
+            
+            // 1. Set "Running" State
+            scanBtn.innerText = "RUNNING ANALYSIS...";
+            scanBtn.disabled = true;
+            threatData.innerHTML = `<span style="color: var(--accent-blue); font-weight: bold; animation: pulse 1.5s infinite;">Scanning in progress...</span>`;
             
             overlay.style.display = 'flex';
             document.getElementById('reportBody').style.opacity = '0.3';
@@ -104,13 +251,12 @@
             try {
                 const response = await fetch('/analyze', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: formData 
                 });
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder("utf-8");
-                let buffer = ""; // FIX: Buffer to handle partial chunks
+                let buffer = ""; 
 
                 while (true) {
                     const { value, done } = await reader.read();
@@ -118,8 +264,6 @@
 
                     buffer += decoder.decode(value, { stream: true });
                     const lines = buffer.split('\n\n');
-                    
-                    // The last element might be an incomplete chunk
                     buffer = lines.pop(); 
 
                     lines.forEach(line => {
@@ -153,6 +297,12 @@
 
                                 if (data.complete) {
                                     renderDashboard(data);
+                                    addToHistory(data); // Save to history on completion
+                                    
+                                    // 2. Reset "Running" State
+                                    scanBtn.innerText = "RUN ANALYSIS";
+                                    scanBtn.disabled = false;
+
                                     const finalMsg = document.createElement('p');
                                     finalMsg.className = 'status-line';
                                     finalMsg.style.color = 'var(--accent-green)';
@@ -165,22 +315,45 @@
                                         document.getElementById('reportBody').style.opacity = '1';
                                     }, 1500); 
                                 }
-                            } catch (e) {
-                                console.error("JSON parse error on line:", line, e);
-                            }
+                            } catch (e) { console.error("JSON parse error:", e); }
                         }
                     });
                 }
             } catch (err) {
                 console.error("AI Neural Link Error:", err);
+                // 3. Reset UI on Error
+                scanBtn.innerText = "RUN ANALYSIS";
+                scanBtn.disabled = false;
+                threatData.innerText = "Scan Failed";
                 cards.forEach(card => card.classList.remove('neural-active'));
                 overlay.style.display = 'none';
             }
         }
 
+        document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+
+        document.getElementById('fileInput').addEventListener('change', function() {
+            if (this.files[0]) {
+                document.getElementById('ipInput').value = `FILE: ${this.files[0].name}`;
+                document.getElementById('ipInput').style.color = "var(--accent-green)";
+            }
+        });
+
         document.getElementById('scanBtn').addEventListener('click', () => {
             const ip = document.getElementById('ipInput').value;
-            if (ip) startAnalysis({ ip: ip });
+            const mode = document.getElementById('scanMode').value;
+            const file = document.getElementById('fileInput').files[0];
+            
+            const fd = new FormData();
+            fd.append('mode', mode);
+            
+            if (file && ip.startsWith("FILE:")) {
+                fd.append('file', file);
+            } else {
+                fd.append('ip', ip);
+            }
+            
+            startAnalysis(fd);
         });
 
         const sidebar = document.querySelector('.sidebar');

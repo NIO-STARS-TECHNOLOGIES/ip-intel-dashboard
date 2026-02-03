@@ -237,9 +237,9 @@ body {
 
 .badge { padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; }
 .risk-critical { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
-.risk-high { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+.risk-high { background: rgba(234, 88, 12, 0.2); color: #fb923c; border: 1px solid #ea580c; }
 .risk-medium { background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid #eab308; }
-
+.risk-low { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
 @keyframes blink-green {
     0%, 100% { opacity: 1; box-shadow: 0 0 8px #22c55e, 0 0 15px #22c55e; }
     50% { opacity: 0.4; box-shadow: 0 0 2px #22c55e; }
@@ -502,4 +502,9 @@ body {
 .card.neural-active {
     border-color: var(--accent-blue) !important;
     animation: neural-pulse 2s infinite ease-in-out;
+}
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
 }
