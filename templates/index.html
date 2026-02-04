@@ -6,7 +6,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.7">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Sidebar History Styles */
         .history-container { padding: 10px; max-height: 300px; overflow-y: auto; }
         .history-item { 
             padding: 12px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.03); 
@@ -38,52 +37,42 @@
                     <li onclick="window.print()"><i class="fas fa-file-export"></i> <span>Export Report</span></li>
                 </ul>
                 <div class="sidebar-content" style="margin-top: 30px;">
-                    <div class="sidebar-header">
-                        <i class="fas fa-history"></i> <span>SCAN HISTORY</span>
-                    </div>
-                    <div id="scanHistoryList" class="history-container">
-                        <div class="empty-history">No recent scans</div>
-                    </div>
+                    <div class="sidebar-header"><i class="fas fa-history"></i> <span>SCAN HISTORY</span></div>
+                    <div id="scanHistoryList" class="history-container"><div class="empty-history">No recent scans</div></div>
+                </div>
+                <div class="sidebar-section">
+                    <h3 style="font-size: 0.8rem; color: var(--accent-blue); padding: 10px; border-bottom: 1px solid var(--border-glow);"><i class="fas fa-clock"></i> PENDING NEURAL TASKS</h3>
+                    <div id="scheduleQueue" class="history-container"><p id="noSchedule" style="font-size: 0.7rem; color: var(--text-muted); text-align: center; padding: 10px;">No active schedules detected.</p></div>
                 </div>
             </nav>
         </aside>
 
         <main class="main-content">
-            <div class="scan-line"></div> 
             <header class="top-bar">
                 <div class="search-area">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="ipInput" placeholder="Targets (e.g. 192.168.1.1)...">
-                    
+                    <input type="text" id="ipInput" placeholder="Targets (e.g. 192.168.1.1)..." autocomplete="off">
                     <input type="file" id="fileInput" accept=".txt" style="display: none;">
-                    <button id="uploadBtn" title="Upload IP List (.txt)" style="background: transparent; border: 1px solid var(--border-color); color: var(--accent-blue); padding: 5px 10px; border-radius: 5px; margin-right: 10px; cursor: pointer;">
-                        <i class="fas fa-file-upload"></i>
-                    </button>
-
+                    <button id="uploadBtn" title="Upload IP List (.txt)" style="background: transparent; border: 1px solid var(--border-color); color: var(--accent-blue); padding: 5px 10px; border-radius: 5px; margin-right: 10px; cursor: pointer;"><i class="fas fa-file-upload"></i></button>
                     <select id="scanMode" style="background: #111; color: var(--accent-blue); border: 1px solid var(--border-color); padding: 8px; border-radius: 5px; margin-right: 10px;">
                         <option value="top1000">Top 1000 Ports</option>
-                        <option value="full">Full Scan (-p-)</option>
+                        <option value="full">Full Scan</option>
                     </select>
                     <button id="scanBtn">RUN ANALYSIS</button>
                 </div>
-                <div class="status-indicator">
-                    <span class="dot online-glow"></span> 
-                    System Online
+                <div class="schedule-container" style="display: flex; flex-direction: column; gap: 8px;">
+                    <label id="stepLabel" style="color: var(--accent-blue); font-size: 0.75rem; font-weight: bold; letter-spacing: 1px;">STEP 1: SELECT SCAN DATE</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="date" id="dateInput" class="neural-input">
+                        <input type="time" id="timeInput" class="neural-input" style="display: none; border-left: 2px solid var(--accent-blue); padding-left: 10px;">
+                        <button id="scheduleBtn" class="btn-neural" style="display: none; background: var(--accent-green); color: black;"><i class="fas fa-calendar-check"></i> CONFIRM SCHEDULE</button>
+                    </div>
                 </div>
+                <div class="status-indicator"><span class="dot online-glow"></span> System Online</div>
             </header>
 
             <section class="dashboard-stats">
-                <div class="card">
-                    <div class="card-icon blue-bg">
-                        <i class="fas fa-network-wired"></i>
-                    </div>
-                    <div class="card-info">
-                        <h3>IP Address</h3>
-                        <select id="ipSelector" onchange="filterByIP(this.value)" style="background:transparent; color:white; border:none; outline:none; font-size:1.1rem; width:100%; cursor:pointer;">
-                            <option>Waiting...</option>
-                        </select>
-                    </div>
-                </div>
+                <div class="card"><div class="card-icon blue-bg"><i class="fas fa-network-wired"></i></div><div class="card-info"><h3>IP Address</h3><select id="ipSelector" onchange="filterByIP(this.value)" style="background:transparent; color:white; border:none; outline:none; font-size:1.1rem; width:100%; cursor:pointer;"><option>Waiting...</option></select></div></div>
                 <div class="card"><div class="card-icon red-bg"><i class="fas fa-biohazard"></i></div><div class="card-info"><h3>Threat Level</h3><p id="threatData">No Scan Active</p></div></div>
                 <div class="card"><div class="card-icon green-bg"><i class="fas fa-microscope"></i></div><div class="card-info"><h3>CVE Findings</h3><p id="ispData">0 Found</p></div></div>
             </section>
@@ -91,76 +80,94 @@
             <section class="detailed-report">
                 <div id="loadingOverlay" class="loading-overlay" style="display: none;">
                     <div class="ai-core-container" style="width: 500px;">
-                        <div class="terminal-window">
-                            <div class="terminal-header"><span>NIO_STARS_AI_ENGINE_V1.0</span></div>
-                            <div id="terminalBody" class="terminal-body"></div>
-                        </div>
-                        <div class="progress-container" style="width: 100%; height: 10px; background: #111; margin-top: 20px; border-radius: 5px; overflow: hidden;">
-                            <div id="progressBar" class="progress-bar" style="width: 0%;"></div>
-                        </div>
+                        <div class="terminal-window"><div class="terminal-header"><span>NIO_STARS_AI_ENGINE_V1.0</span></div><div id="terminalBody" class="terminal-body"></div></div>
+                        <div class="progress-container" style="width: 100%; height: 10px; background: #111; margin-top: 20px; border-radius: 5px; overflow: hidden;"><div id="progressBar" class="progress-bar" style="width: 0%;"></div></div>
                         <p id="progressPercent" style="text-align: center; color: var(--accent-blue); margin-top: 10px; font-weight: bold;">0%</p>
                     </div>
                 </div>
-
-                <div id="reportBody" class="report-body">
-                    <div class="empty-state">
-                        <div class="pulse-icon"><i class="fas fa-terminal"></i></div>
-                        <h2>System Ready</h2>
-                        <p>Enter a target IP to initiate AI Neural Intelligence Scan.</p>
-                    </div>
-                </div>
+                <!-- <div id="reportBody" class="report-body"><div class="scan-line"></div><div class="empty-state"><h2>System Ready</h2><p>Enter a target IP to initiate AI Neural Intelligence Scan.</p></div></div> -->
+                 <div id="reportBody" class="report-body">
+                    <div class="scan-line"></div>
+                        <div class="empty-state">
+                            <div class="empty-state">
+                                <div class="nio-brand-wrapper">
+                                    <div class="nio-logo-main">                                        
+                                        <div class="nio-text-container">
+                                            <span class="nio-text-top">NIO STARS</span>
+                                            <span class="nio-text-bottom">TECHNOLOGIES</span>
+                                        </div>
+                                    </div>
+                                    <h2 style="color: #d4af37; text-shadow: 0 0 15px rgba(212, 175, 55, 0.4); margin-top: 25px;">
+                                        INTELLIGENCE SYSTEM READY
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                 </div>
             </section>
         </main>
     </div>
 
     <script>
+        const synthSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'); 
         let allScanResults = []; 
-        let scanHistory = []; // Global History Store
+        let scanHistory = [];
+
+        function typeLog(message, color = "var(--text-main)", container) {
+            if (!container) return;
+            const p = document.createElement('p');
+            p.className = 'status-line';
+            p.style.color = color;
+            p.style.marginBottom = "5px";
+            container.appendChild(p);
+            let i = 0;
+            function type() {
+                if (i < message.length) {
+                    p.innerHTML += message.charAt(i);
+                    i++;
+                    setTimeout(type, 25 + Math.random() * 20); 
+                }
+                container.scrollTop = container.scrollHeight;
+            }
+            type();
+        }
+
+        window.onload = function() {
+            document.getElementById('ipInput').value = "";
+            document.getElementById('dateInput').value = "";
+            document.getElementById('timeInput').value = "";
+            document.getElementById('threatData').innerText = "No Scan Active";
+            document.getElementById('ispData').innerText = "0 Found";
+            allScanResults = []; 
+            document.getElementById('timeInput').style.display = 'none';
+            document.getElementById('scheduleBtn').style.display = 'none';
+            document.getElementById('stepLabel').innerText = "STEP 1: SELECT DATE";
+            console.log("NIO STARS Intelligence Engine: System Memory Purged.");
+        };
 
         function renderDashboard(data) {
             allScanResults = data.results; 
-            
             const selector = document.getElementById('ipSelector');
             if (selector) {
                 selector.innerHTML = '<option value="all">ALL TARGETS</option>';
                 if (data.unique_ips) {
-                    data.unique_ips.forEach(ip => {
-                        selector.innerHTML += `<option value="${ip}">${ip}</option>`;
-                    });
+                    data.unique_ips.forEach(ip => { selector.innerHTML += `<option value="${ip}">${ip}</option>`; });
                 }
             }
             const counts = data.threat_counts || { "CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0 };
             document.getElementById('threatData').innerHTML = `
                 <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 5px;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span class="badge risk-critical">Critical: ${counts.CRITICAL}</span>
-                        <span class="badge risk-high">High: ${counts.HIGH}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span class="badge risk-medium">Medium: ${counts.MEDIUM}</span>
-                        <span class="badge risk-low">Low: ${counts.LOW}</span>
-                    </div>
-                </div>
-            `;
-
+                    <div style="display: flex; justify-content: space-between;"><span class="badge risk-critical">Critical: ${counts.CRITICAL}</span><span class="badge risk-high">High: ${counts.HIGH}</span></div>
+                    <div style="display: flex; justify-content: space-between;"><span class="badge risk-medium">Medium: ${counts.MEDIUM}</span><span class="badge risk-low">Low: ${counts.LOW}</span></div>
+                </div>`;
             document.getElementById('ispData').innerText = `${data.total_findings || 0} CVEs Detected`;
-
             updateTable(allScanResults); 
-            
-            // Hide overlay if reloading from history
             document.getElementById('loadingOverlay').style.display = 'none';
             document.getElementById('reportBody').style.opacity = '1';
         }
 
-        // Add to Sidebar History
         function addToHistory(data) {
-            const item = {
-                id: Date.now(),
-                label: data.target_ip,
-                count: data.total_findings,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                fullData: data
-            };
+            const item = { id: Date.now(), label: data.target_ip, count: data.total_findings, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), fullData: data };
             scanHistory.unshift(item);
             updateHistoryUI();
         }
@@ -168,90 +175,149 @@
         function updateHistoryUI() {
             const container = document.getElementById('scanHistoryList');
             container.innerHTML = '';
-            if (scanHistory.length === 0) {
-                container.innerHTML = '<div class="empty-history">No recent scans</div>';
-                return;
-            }
+            if (scanHistory.length === 0) { container.innerHTML = '<div class="empty-history">No recent scans</div>'; return; }
             scanHistory.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'history-item';
                 div.onclick = () => renderDashboard(item.fullData);
-                div.innerHTML = `
-                    <strong>${item.label}</strong>
-                    <span>${item.time} • ${item.count} Findings</span>
-                `;
+                div.innerHTML = `<strong>${item.label}</strong><span>${item.time} • ${item.count} Findings</span>`;
                 container.appendChild(div);
             });
         }
 
         function filterByIP(selectedIP) {
-            if (selectedIP === "all") {
-                updateTable(allScanResults);
-            } else {
-                const filtered = allScanResults.filter(item => item.ip === selectedIP);
-                updateTable(filtered);
-            }
+            let filteredData = (selectedIP === "all") ? allScanResults : allScanResults.filter(item => item.ip === selectedIP);
+            updateTable(filteredData);
         }
 
         function updateTable(results) {
-            let html = '<table class="report-table"><thead><tr style="background:transparent;"><th style="color:var(--accent-blue); text-align:left; padding-left:20px;">SERVICE ENGINE</th><th style="color:var(--accent-blue); text-align:left;">INTELLIGENCE REPORT</th><th style="color:var(--accent-blue); text-align:center;">THREAT SCORE</th></tr></thead><tbody>';
+            const reportBody = document.getElementById('reportBody');
+            let html = `<table class="report-table">
+                            <thead>
+                                <tr style="background:transparent;">
+                                    <th style="color:var(--accent-blue); text-align:left; padding-left:20px;">SERVICE ENGINE</th>
+                                    <th style="color:var(--accent-blue); text-align:left;">INTELLIGENCE REPORT</th>
+                                    <th style="color:var(--accent-blue); text-align:center;">THREAT SCORE</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
             
             if (results && results.length > 0) {
                 results.forEach(item => {
-                    html += `<tr>
-                        <td>
-                            <div style="display:flex; align-items:center; gap:10px;">
-                                <i class="fas fa-server" style="color:var(--accent-blue)"></i>
-                                <div>
-                                    <strong style="font-size:1.1rem;">${item.Service}</strong><br>
-                                    <small style="color:var(--text-muted)">${item.Version} (${item.ip})</small>
+                    html += `
+                        <tr>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <i class="fas fa-server" style="color:var(--accent-blue)"></i>
+                                    <div>
+                                        <strong style="font-size:1.1rem;">${item.Service}</strong><br>
+                                        <small style="color:var(--text-muted)">${item.Version} (${item.ip})</small>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td>
-                            <a href="${item['Reference URL']}" target="_blank" style="color:var(--text-main); text-decoration:none; font-weight:700; font-size:1.1rem; border-bottom: 1px dashed var(--accent-blue);">
-                                ${item['Vulnerability ID']} <i class="fas fa-external-link-alt" style="font-size:0.8rem; opacity:0.6;"></i>
-                            </a>
-                            <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 10px; line-height:1.6;">${item.description || ''}</p>
-                        </td>
-                        <td style="text-align:center;">
-                            <span class="badge ${item.risk_class}">${item['CVSS Score']}</span>
-                        </td>
-                    </tr>`;
+                            </td>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span style="font-weight:700; color:var(--text-main);">${item['Vulnerability ID']}</span>
+                                    <a href="${item['Reference URL']}" target="_blank" title="View on NIST NVD" 
+                                    style="color:var(--accent-blue); text-decoration:none; font-size:0.9rem;">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                                <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 5px;">
+                                    ${item.description || 'Analyzing...'}
+                                </p>
+                            </td>
+                            <td style="text-align:center;">
+                                <span class="badge ${item.risk_class}">${item['CVSS Score']}</span>
+                            </td>
+                        </tr>`;
                 });
-            } else {
-                html += '<tr><td colspan="3" style="text-align:center; padding: 50px;">Scan verified. No findings for this selection.</td></tr>';
+            } else { 
+                html += '<tr><td colspan="3" style="text-align:center; padding: 50px;">Target verified. No vulnerabilities detected.</td></tr>'; 
             }
-            document.getElementById('reportBody').innerHTML = html + '</tbody></table>';
+            
+            html += '</tbody></table>';
+            reportBody.innerHTML = html;
         }
 
-        async function startAnalysis(formData) {
+        const dateInput = document.getElementById('dateInput');
+        const timeInput = document.getElementById('timeInput');
+        const scheduleBtn = document.getElementById('scheduleBtn');
+        const stepLabel = document.getElementById('stepLabel');
+
+        dateInput.addEventListener('change', () => { if (dateInput.value) { timeInput.style.display = 'block'; stepLabel.innerText = "STEP 2: SELECT SCAN TIME"; timeInput.focus(); } });
+        timeInput.addEventListener('change', () => { if (timeInput.value) { scheduleBtn.style.display = 'block'; stepLabel.innerText = "STEP 3: READY TO DEPLOY"; scheduleBtn.style.animation = "bounce 0.5s ease"; } });
+
+        document.getElementById('scheduleBtn').addEventListener('click', async () => {
+            const ipVal = document.getElementById('ipInput').value.trim();
+            const dateVal = document.getElementById('dateInput').value;
+            const timeVal = document.getElementById('timeInput').value;
+            const modeVal = document.getElementById('scanMode').value;
+            if (!ipVal || !dateVal || !timeVal) { alert("CRITICAL ERROR: Data missing for Neural Schedule."); return; }
+            const combinedTime = `${dateVal}T${timeVal}`;
+            const response = await fetch('/schedule-scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ip: ipVal, mode: modeVal, time: combinedTime }) });
+            const result = await response.json();
+            if (result.status === "success") {
+                synthSound.play();
+                const sBtn = document.getElementById('scheduleBtn');
+                sBtn.innerHTML = `<i class="fas fa-check-circle"></i> LINK QUEUED`;
+                sBtn.disabled = true; 
+                updateScheduleQueue(ipVal, modeVal, combinedTime);
+                setTimeout(() => { sBtn.innerHTML = `<i class="fas fa-calendar-check"></i> SCHEDULE SCAN`; sBtn.disabled = false; }, 3000);
+            } else { alert("Scheduling Failed: " + result.msg); }
+        });
+
+        function updateScheduleQueue(ip, mode, time) {
+            const queue = document.getElementById('scheduleQueue');
+            const noSchedule = document.getElementById('noSchedule');
+            if (noSchedule) noSchedule.remove();
+            const dateObj = new Date(time);
+            const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const taskItem = document.createElement('div');
+            taskItem.className = 'history-item';
+            taskItem.style.borderLeftColor = 'var(--accent-green)';
+            taskItem.innerHTML = `<strong style="color: var(--accent-green)">${ip}</strong><span><i class="fas fa-terminal"></i> ${mode.toUpperCase()}</span><span><i class="fas fa-hourglass-start"></i> Executes at ${timeStr}</span>`;
+            queue.prepend(taskItem);
+        }
+    
+        setInterval(async () => {
+            try {
+                const response = await fetch('/check-trigger');
+                const trigger = await response.json();
+                if (trigger.run_now) {
+                    document.getElementById('ipInput').value = trigger.target;
+                    document.getElementById('scanMode').value = trigger.mode;
+                    startAnalysis({ ip: trigger.target, mode: trigger.mode }); 
+                }
+            } catch (e) { console.error("Trigger Check Error:", e); }
+        }, 3000);
+
+        async function startAnalysis(inputData) {
+            const isJson = !(inputData instanceof FormData);
             const overlay = document.getElementById('loadingOverlay');
             const terminal = document.getElementById('terminalBody');
             const ticker = document.getElementById('logTicker');
             const bar = document.getElementById('progressBar');
             const percentText = document.getElementById('progressPercent');
             const cards = document.querySelectorAll('.card');
-            
-            // UI Elements for "Running" state
             const scanBtn = document.getElementById('scanBtn');
             const threatData = document.getElementById('threatData');
             
-            // 1. Set "Running" State
+            // UI Setup
             scanBtn.innerText = "RUNNING ANALYSIS...";
             scanBtn.disabled = true;
-            threatData.innerHTML = `<span style="color: var(--accent-blue); font-weight: bold; animation: pulse 1.5s infinite;">Scanning in progress...</span>`;
-            
             overlay.style.display = 'flex';
             document.getElementById('reportBody').style.opacity = '0.3';
             bar.style.width = '0%';
-            terminal.innerHTML = '';
+            terminal.innerHTML = ''; // Ensure terminal is clean
             cards.forEach(card => card.classList.add('neural-active'));
 
             try {
                 const response = await fetch('/analyze', {
                     method: 'POST',
-                    body: formData 
+                    // Correct Headers for JSON vs FormData
+                    headers: isJson ? { 'Content-Type': 'application/json' } : {},
+                    body: isJson ? JSON.stringify(inputData) : inputData
                 });
 
                 const reader = response.body.getReader();
@@ -272,15 +338,11 @@
                                 const data = JSON.parse(line.replace('data: ', '').trim());
                                 
                                 if (data.msg) {
-                                    const p = document.createElement('p');
-                                    p.className = 'status-line';
-                                    if (data.msg.includes('[AI]')) {
-                                        p.style.color = 'var(--accent-blue)';
-                                        p.style.textShadow = '0 0 10px var(--accent-blue)';
-                                    }
-                                    p.innerText = `> ${data.msg}`;
-                                    terminal.appendChild(p);
-                                    terminal.scrollTop = terminal.scrollHeight;
+                                    let logColor = 'var(--text-main)';
+                                    if (data.msg.includes('[AI]')) logColor = 'var(--accent-blue)';
+                                    if (data.msg.includes('[ERROR]')) logColor = 'var(--accent-red)';
+                                    if (data.msg.includes('[SYSTEM]')) logColor = 'var(--accent-green)';
+                                    typeLog(data.msg, logColor, terminal);
                                 }
 
                                 if (data.ticker) {
@@ -297,17 +359,10 @@
 
                                 if (data.complete) {
                                     renderDashboard(data);
-                                    addToHistory(data); // Save to history on completion
-                                    
-                                    // 2. Reset "Running" State
+                                    addToHistory(data);
                                     scanBtn.innerText = "RUN ANALYSIS";
                                     scanBtn.disabled = false;
-
-                                    const finalMsg = document.createElement('p');
-                                    finalMsg.className = 'status-line';
-                                    finalMsg.style.color = 'var(--accent-green)';
-                                    finalMsg.innerText = "> [AI] DEEP ANALYSIS COMPLETE. DEPLOYING INTELLIGENCE REPORT...";
-                                    terminal.appendChild(finalMsg);
+                                    typeLog("> [AI] DEEP ANALYSIS COMPLETE. DEPLOYING INTELLIGENCE REPORT...", 'var(--accent-green)', terminal);
 
                                     setTimeout(() => { 
                                         cards.forEach(card => card.classList.remove('neural-active'));
@@ -321,45 +376,27 @@
                 }
             } catch (err) {
                 console.error("AI Neural Link Error:", err);
-                // 3. Reset UI on Error
                 scanBtn.innerText = "RUN ANALYSIS";
                 scanBtn.disabled = false;
-                threatData.innerText = "Scan Failed";
-                cards.forEach(card => card.classList.remove('neural-active'));
                 overlay.style.display = 'none';
+                terminal.innerHTML = '';
             }
         }
-
         document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
-
-        document.getElementById('fileInput').addEventListener('change', function() {
-            if (this.files[0]) {
-                document.getElementById('ipInput').value = `FILE: ${this.files[0].name}`;
-                document.getElementById('ipInput').style.color = "var(--accent-green)";
-            }
-        });
+        document.getElementById('fileInput').addEventListener('change', function() { if (this.files[0]) { document.getElementById('ipInput').value = `FILE: ${this.files[0].name}`; document.getElementById('ipInput').style.color = "var(--accent-green)"; } });
 
         document.getElementById('scanBtn').addEventListener('click', () => {
             const ip = document.getElementById('ipInput').value;
             const mode = document.getElementById('scanMode').value;
             const file = document.getElementById('fileInput').files[0];
-            
             const fd = new FormData();
             fd.append('mode', mode);
-            
-            if (file && ip.startsWith("FILE:")) {
-                fd.append('file', file);
-            } else {
-                fd.append('ip', ip);
-            }
-            
+            if (file && ip.startsWith("FILE:")) fd.append('file', file);
+            else fd.append('ip', ip);
             startAnalysis(fd);
         });
 
-        const sidebar = document.querySelector('.sidebar');
-        document.getElementById('toggle-sidebar').addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
-        });
+        document.getElementById('toggle-sidebar').addEventListener('click', () => { document.querySelector('.sidebar').classList.toggle('collapsed'); });
     </script>
 </body>
 </html>

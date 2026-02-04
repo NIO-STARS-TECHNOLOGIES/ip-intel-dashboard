@@ -508,3 +508,289 @@ body {
     50% { opacity: 1; }
     100% { opacity: 0.6; }
 }
+
+/* Ensure the native date/time icons are visible on dark background */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* Add a pulse effect to the schedule label to draw attention */
+.schedule-group label {
+    letter-spacing: 1px;
+    animation: pulse-label 2s infinite;
+}
+
+@keyframes pulse-label {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+    40% {transform: translateY(-5px);}
+    60% {transform: translateY(-3px);}
+}
+.schedule-container {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px dashed var(--border-glow);
+}
+
+input[type="date"], input[type="time"] {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glow);
+    color: var(--accent-blue);
+    padding: 8px;
+    border-radius: 4px;
+    outline: none;
+    transition: 0.3s;
+}
+
+input:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+}
+
+/* Custom Calendar Icon Color */
+::-webkit-calendar-picker-indicator {
+    filter: invert(1) sepia(100%) saturate(1000%) hue-rotate(170deg);
+    cursor: pointer;
+}
+.btn-neural {
+    background: linear-gradient(135deg, var(--accent-blue), #0077ff);
+    color: #000;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+}
+
+.report-table tr {
+    background: rgba(255, 255, 255, 0.02);
+    transition: 0.2s;
+}
+
+.report-table tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.report-table td {
+    padding: 15px;
+    border-top: 1px solid var(--border-glow);
+    border-bottom: 1px solid var(--border-glow);
+}
+
+/* Background Status Light */
+#bgPulse {
+    padding: 10px 15px;
+    background: rgba(0, 243, 255, 0.05);
+    border-radius: 6px;
+    border-left: 3px solid var(--accent-blue);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fa-satellite-dish {
+    animation: pulse-glow 1.5s infinite;
+}
+
+@keyframes pulse-glow {
+    0% { color: var(--accent-blue); opacity: 0.5; }
+    50% { color: var(--accent-blue); opacity: 1; text-shadow: 0 0 10px var(--accent-blue); }
+    100% { color: var(--accent-blue); opacity: 0.5; }
+}
+
+/* style.css */
+.neural-active {
+    border-color: var(--accent-blue) !important;
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3) !important;
+    animation: border-pulse 2s infinite;
+}
+
+@keyframes border-pulse {
+    0% { border-color: rgba(0, 243, 255, 0.2); }
+    50% { border-color: rgba(0, 243, 255, 1); }
+    100% { border-color: rgba(0, 243, 255, 0.2); }
+}
+/* Unique glow for scheduled background tasks */
+.neural-active {
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.4) !important;
+    border: 1px solid var(--accent-blue) !important;
+}
+
+#threatData span {
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* Add this to your style section */
+.status-line::after {
+    content: "|";
+    animation: blink 0.8s infinite;
+    margin-left: 2px;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Remove the cursor from completed lines so only the last one blinks */
+.status-line:not(:last-child)::after {
+    display: none;
+}
+
+/* --- Terminal Background Logo --- */
+
+@keyframes pulse-logo {
+    0% { opacity: 0.05; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.15; transform: translate(-50%, -50%) scale(1.05); filter: drop-shadow(0 0 15px var(--accent-blue)); }
+    100% { opacity: 0.05; transform: translate(-50%, -50%) scale(1); }
+}
+
+.terminal-logo-bg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1; /* Sits behind the text */
+    pointer-events: none; /* Prevents interference with scrolling */
+    user-select: none;
+}
+
+.terminal-logo-bg i {
+    font-size: 8rem;
+    color: var(--accent-blue);
+    animation: pulse-logo 3s infinite ease-in-out;
+}
+
+/* Ensure terminal body allows transparency for the logo */
+.terminal-body {
+    position: relative;
+    z-index: 2; /* Text stays on top */
+    background: transparent !important;
+}
+
+.terminal-window {
+    position: relative; /* Anchor for the absolute logo */
+}
+
+/* --- Neural Hologram Effect --- */
+.logo-aura {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Create a glowing 'base' for the hologram */
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+    padding: 40px;
+    border-radius: 50%;
+}
+
+.empty-state-logo {
+    width: 450px;
+    height: auto;
+    /* Hide the black box and blend with the dashboard's blue/dark background */
+    mix-blend-mode: screen; 
+    /* Soften the edges to prevent a sharp 'cut-out' look */
+    filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.4)) contrast(1.1);
+    animation: hologram-float 6s infinite ease-in-out;
+    user-select: none;
+}
+
+@keyframes hologram-float {
+    0%, 100% { 
+        transform: translateY(0) scale(1); 
+        filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.3));
+        opacity: 0.8;
+    }
+    50% { 
+        transform: translateY(-15px) scale(1.02); 
+        filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.6));
+        opacity: 1;
+    }
+}
+
+/* Optional: Add a subtle 'scan line' that only passes through the logo */
+.logo-aura::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 2px;
+    background: rgba(212, 175, 55, 0.5);
+    box-shadow: 0 0 10px var(--accent-blue);
+    animation: logo-scan 4s linear infinite;
+    opacity: 0.3;
+}
+
+@keyframes logo-scan {
+    0% { top: 20%; opacity: 0; }
+    50% { opacity: 0.5; }
+    100% { top: 80%; opacity: 0; }
+}
+
+/* --- Pure CSS Nio Stars Logo --- */
+/* --- Nio Stars Neural Branding --- */
+.nio-brand-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    animation: neural-float 5s infinite ease-in-out;
+}
+
+.nio-logo-main {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    margin-bottom: 20px;
+}
+
+/* Gold Gradient Typography */
+.nio-text-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.nio-text-top {
+    font-family: 'Inter', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 800;
+    background: linear-gradient(to bottom, #f1d592, #d4af37);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px; /* Matches the tight kerning in your logo */
+}
+
+.nio-text-bottom {
+    font-size: 0.85rem;
+    letter-spacing: 8px;
+    color: #d4af37;
+    text-transform: uppercase;
+    opacity: 0.9;
+    margin-top: 2px;
+}
+
+@keyframes neural-float {
+    0%, 100% { transform: translateY(0); opacity: 0.8; }
+    50% { transform: translateY(-15px); opacity: 1; }
+}

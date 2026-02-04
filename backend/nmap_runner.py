@@ -7,7 +7,7 @@ def run_nmap(target_ip=None, target_file=None, scan_mode="top1000", progress_cal
     Ensures command arguments are correctly formatted for subprocess execution.
     """
     # 1. Base command structure with T4 for speed and -Pn to skip host discovery
-    cmd = ["nmap", "-sS", "-sV", "-T4", "--stats-every", "10s", "--script=vuln,vulners", "-Pn"]
+    cmd = ["nmap", "-sV", "-T4", "--stats-every", "10s", "--script=vuln,vulners", "-Pn"]
     
     # 2. Port selection logic based on mode
     if scan_mode == "full":

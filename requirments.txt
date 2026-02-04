@@ -3,5 +3,6 @@ flask>=2.3,<3.0
 requests>=2.31.0,<3.0
 beautifulsoup4>=4.12,<5.0
 lxml>=4.9,<6.0
+flask-apscheduler
 
 # 192.168.0.169
